@@ -48,6 +48,13 @@ class TextScreen:
         self.master = master
         self.theme_data = json.load(f_p:=open(self.master.settings["theme"], "r", encoding="utf8"))
         f_p.close()
+        self.updated = True
+
+    def check_update(self):
+        updated = self.updated or self.document.updated
+        self.updated = False
+        self.document.updated = False
+        return updated
     
     def open_document(self, path:str):
         self._y_pos = 0
@@ -55,10 +62,12 @@ class TextScreen:
         self.state = [[] for _ in range(self.height)]
         self.footer_string = self.document.file_path
         sys.stdout.write("\033c")
+        self.updated = True
     
     def refresh(self):
         self.theme_data = json.load(f_p:=open(self.master.settings["theme"], "r", encoding="utf8"))
         f_p.close()
+        self.updated = True
 
     @property
     def y_pos(self):
@@ -90,18 +99,22 @@ class TextScreen:
             self.document.render_width = self.width
             self.document.update_state()
             sys.stdout.write("\033c")
+            
 
         # render the screen
 
         screen = ""
-        doc_state = self.document.state[max(self.y_pos, 0):min(self.y_pos + self.height, self.document.height)]
+        doc_state = self.document.state
 
-        for ln, line in enumerate(doc_state):
+        ln = 0
+        for dsln in range(max(self.y_pos, 0), min(self.y_pos + self.height, self.document.height)):
+            line = doc_state[dsln]
             self.state[ln] = [char for char in line]
             
             # add spaces to rhs of text accounting for tabs
-            while str_weight(self.state[ln]) < self.width:
-                self.state[ln].append(None)
+            
+            self.state[ln].extend([None for _ in range(self.width - str_weight(self.state[ln]))])
+            ln += 1
             
 
         for y, row in enumerate(self.state):
@@ -140,6 +153,8 @@ class TextScreen:
         return f"{screen}\033[K{self.theme_data['emblem']} {bchar}{padding}{self.footer_string}{padding}{footer_bg}\n\033[K"
     
     def handle_key(self, key:bytes):
+        if key != None:
+            self.updated = True
         if self.edit_mode:
             self.footer_string = self.document.file_path if self.footer_string in {"COMMAND MODE",self.document.file_path} else self.footer_string
             if self.document._recording_arrow:
@@ -174,3 +189,4 @@ class TextScreen:
             self.master.run_command(input(self.theme_data['CLI_prefix']))
             sys.stdout.write("\033c")
             self.edit_mode = True
+            self.updated = True

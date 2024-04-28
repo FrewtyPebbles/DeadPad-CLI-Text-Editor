@@ -10,11 +10,11 @@ from parts.textscreen import TextScreen
 import shutil
 from parts.document import Document
 
-
+opsys = platform.system()
 class Editor:
     def __init__(self) -> None:
         self.in_handler = InputHandler()
-        term_size = shutil.get_terminal_size()
+        self.term_size = shutil.get_terminal_size()
         self.settings = {
             # Toggleables
             "show_paragraphs": False,
@@ -25,7 +25,7 @@ class Editor:
             "tab_replace": "\t",
         }
 
-        self.screen = TextScreen(self, term_size.columns, term_size.lines, Document(self, term_size.columns, sys.argv[1]))
+        self.screen = TextScreen(self, self.term_size.columns, self.term_size.lines, Document(self, self.term_size.columns, sys.argv[1]))
 
     def run_command(self, command_str:str):
         tokens = self.get_tokens(command_str)
@@ -140,15 +140,18 @@ class Editor:
         while self.screen.running:
             self._run_update()
         self.in_handler.stop()
-        time.sleep(0.3)
         sys.stdout.write("\033c")
-        
         
     def _run_update(self):
         self.screen.handle_key(self.in_handler.get())
         term_size = shutil.get_terminal_size()
-        clear_str = "\033[F\033[K" * (term_size.lines-1) if platform.system() == "Windows" else "\033c"
-        sys.stdout.write(f"{clear_str}{self.screen.render(term_size.columns, term_size.lines)}")
+        if self.screen.check_update()\
+         or term_size.lines != self.term_size.lines\
+         or term_size.columns != self.term_size.columns:
+            self.term_size = term_size
+            clear_str = "\033[F\033[K" * (self.term_size.lines) if opsys == "Windows" else "\033c"
+            self.screen.render(self.term_size.columns, self.term_size.lines)
+            sys.stdout.write(f"{clear_str}{self.screen.render(self.term_size.columns, self.term_size.lines)}")
 
 if __name__ == "__main__":
     editor = Editor()

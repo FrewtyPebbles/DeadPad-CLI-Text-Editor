@@ -41,8 +41,11 @@ def newline_chunkstring(string:str, length:int):
     ret:list[str] = []
     for chunk in string.splitlines(True):
         # TODO split into chunks based on actual size since tabs are bigger
-        chunks = chunk_str_by_weight(chunk, length)
-        #chunks = [chunk[0+i:length+i] for i in range(0, len(chunk), length)]
+        chunks = []
+        if str_weight(chunk) > length:
+            chunks = chunk_str_by_weight(chunk, length)
+        else:
+            chunks = [chunk]
         for sub_chunk in chunks:
             ret.append(sub_chunk)
     return ret
@@ -83,18 +86,14 @@ class CursorPosition:
         h = self.owner.height
         state = self.owner.state
         while (val >= len(state[self.y])) if self.y < h else False:
-            #print("right", val, len(state[self.y]))
             val -= len(state[self.y])
             self.y += 1
-            #time.sleep(0.05)
+        
         
         while val < 0:
             self.y -= 1
             val += len(state[self.y])
-            # print("left", val, len(state[self.y]))
-            
-        #print("right", val, len(state[self.y]))
-        #time.sleep(0.05)
+
         self._x = val
 
 class Document:
@@ -109,6 +108,7 @@ class Document:
         self.str_state = t_str_state if t_str_state[-1] == "\n" else t_str_state + "\n"
         self.state = newline_chunkstring(self.str_state, self.render_width)
         self.master = master
+        self.updated = True
 
     def __del__(self):
         self.file.close()
@@ -118,15 +118,22 @@ class Document:
         self.file.seek(0)
         self.file.write(self.str_state)
         self.file.truncate()
+        self.updated = True
 
     def update_state(self):
         self.str_state = "".join(self.state)
         self.str_state = self.str_state if self.str_state[-1] == "\n" else self.str_state + "\n"
         self.state = newline_chunkstring(self.str_state, self.render_width)
+        self.updated = True
 
     @property
     def height(self):
         return len(self.state)
+    
+    def check_update(self):
+        updated = self.updated
+        self.updated = False
+        return updated
 
     def handle_key(self, key:bytes):
         if key != None:
@@ -178,15 +185,17 @@ class Document:
                             self.cursor.x -= 1
                             self.update_state()
                     case b'\t':
-                        for char in self.master.settings["tab_replace"]:
-                            self._insert_character(char.encode(), self.cursor.x, self.cursor.y)
-                            self.cursor.x += 1
-                            self.update_state()
+                        
+                        self._insert_character(self.master.settings["tab_replace"].encode(), self.cursor.x, self.cursor.y)
+                        self.cursor.x += len(self.master.settings["tab_replace"])
+                        self.update_state()
                     case _:
                         
                         self._insert_character(key, self.cursor.x, self.cursor.y)
                         self.cursor.x += 1
                         self.update_state()
+            
+            
         
     def _insert_character(self, char:bytes, x:int, y:int):
         """
