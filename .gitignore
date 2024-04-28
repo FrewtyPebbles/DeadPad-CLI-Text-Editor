@@ -3,3 +3,5 @@
 testing.py
 /testing/
 profiling.py
+/dist/
+/deadpad.egg-info/

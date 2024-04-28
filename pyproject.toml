@@ -25,10 +25,14 @@ Homepage = "https://github.com/FrewtyPebbles/DeadPad-CLI-Text-Editor"
 Issues = "https://github.com/FrewtyPebbles/DeadPad-CLI-Text-Editor/issues"
 
 [tool.setuptools.packages.find]
+where = ["."]
+include = ["/parts/","/themes/", "deadpad.py","LICENSE"]
+namespaces = true
 exclude = [
     "/__pycache__/",
     "*/__pycache__",
     "testing.py",
     "/testing/",
-    "profiling.py"
+    "profiling.py",
+    "/preview/"
 ]
