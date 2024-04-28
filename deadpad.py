@@ -1,7 +1,6 @@
 import datetime
 import platform
 import sys
-import time
 try:
     from parts.windows_input import InputHandler
 except ModuleNotFoundError:
@@ -11,7 +10,11 @@ import shutil
 from parts.document import Document
 
 opsys = platform.system()
+
+
+
 class Editor:
+    "The main class for the python based CLI text editor Dead Pad"
     def __init__(self) -> None:
         self.in_handler = InputHandler()
         self.term_size = shutil.get_terminal_size()
