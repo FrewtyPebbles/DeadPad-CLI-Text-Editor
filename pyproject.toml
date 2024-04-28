@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "deadpad"
+version = "0.1.0"
+authors = [
+  { name="William L." },
+]
+description = "A customizeable lightweight CLI/TUI text editor made without curses or any TUI framework."
+readme = "README.md"
+requires-python = ">=3.10"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+[project.urls]
+Homepage = "https://github.com/FrewtyPebbles/DeadPad-CLI-Text-Editor"
+Issues = "https://github.com/FrewtyPebbles/DeadPad-CLI-Text-Editor/issues"
+
+[tool.setuptools.packages.find]
+exclude = [
+    "/__pycache__/",
+    "*/__pycache__",
+    "testing.py",
+    "/testing/",
+    "profiling.py"
+]

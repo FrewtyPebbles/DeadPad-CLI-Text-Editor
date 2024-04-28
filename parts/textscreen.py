@@ -49,6 +49,12 @@ class TextScreen:
         self.theme_data = json.load(f_p:=open(self.master.settings["theme"], "r", encoding="utf8"))
         f_p.close()
         self.updated = True
+        
+        self.state = [[] for _ in range(self.height)]    
+        self.document.render_width = self.width
+        self.document.update_state()
+        sys.stdout.write("\033c")
+        
 
     def check_update(self):
         updated = self.updated or self.document.updated

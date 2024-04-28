@@ -21,4 +21,7 @@ class InputHandler(BaseInputHandler):
 
     def _detect_keys(self):
         while self.checking_for_input:
+            if self.input_queue.full():
+                self.input_queue.get(False)
+                self.input_queue.get(False)
             self.input_queue.put(self.filter_key(getch()), False)
