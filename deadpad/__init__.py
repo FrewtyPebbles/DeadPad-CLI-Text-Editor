@@ -1,13 +1,14 @@
 import datetime
+import os
 import platform
 import sys
-try:
-    from parts.windows_input import InputHandler
-except ModuleNotFoundError:
-    from parts.linux_input import InputHandler
-from parts.textscreen import TextScreen
+from deadpad.parts.textscreen import TextScreen
 import shutil
-from parts.document import Document
+from deadpad.parts.document import Document
+try:
+    from deadpad.parts.windows_input import InputHandler
+except ModuleNotFoundError:
+    from deadpad.parts.linux_input import InputHandler
 
 opsys = platform.system()
 
@@ -18,16 +19,17 @@ class Editor:
     def __init__(self) -> None:
         self.in_handler = InputHandler()
         self.term_size = shutil.get_terminal_size()
+        self.themes_path = f"{os.path.dirname(__file__)}/themes/"
         self.settings = {
             # Toggleables
             "show_paragraphs": False,
             "show_tabs": False,
             "line_numbers": True,
             # General config
-            "theme": "./themes/default.json",
+            "theme": f"default",
             "tab_replace": "\t",
         }
-
+        
         self.screen = TextScreen(self, self.term_size.columns, self.term_size.lines, Document(self, self.term_size.columns, sys.argv[1]))
 
     def run_command(self, command_str:str):

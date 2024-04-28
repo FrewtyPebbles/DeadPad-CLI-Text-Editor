@@ -4,9 +4,9 @@ import sys
 import datetime
 from typing import TYPE_CHECKING
 
-from parts import input_handler
+from deadpad.parts import keys
 if TYPE_CHECKING:
-    from parts.textscreen import TextScreen
+    from deadpad.parts.textscreen import TextScreen
     from deadpad import Editor
 
 def chrweight(char:str):
@@ -143,21 +143,21 @@ class Document:
         if key != None:
             
             match key:
-                case input_handler.UP: # up
+                case keys.UP: # up
                     self.cursor.y -= 1
-                case input_handler.DOWN: # down
+                case keys.DOWN: # down
                     if not (self.cursor.y == len(self.state)-1):
                         self.cursor.y += 1
-                case input_handler.LEFT: # left
+                case keys.LEFT: # left
                     if not (self.cursor.x == 0 and \
                     self.cursor.y == 0):
                         self.cursor.x -= 1
-                case input_handler.RIGHT: # right
+                case keys.RIGHT: # right
                     if not (self.cursor.x == len(self.state[-1])-1 and \
                     self.cursor.y == len(self.state)-1):
                         self.cursor.x += 1
                     
-                case input_handler.CTRL_W: # ctrl w
+                case keys.CTRL_W: # ctrl w
                     self.save()
                 case b'\n': # enter
                     # TODO Make it drop text to the next line
@@ -170,7 +170,7 @@ class Document:
                         self.cursor.x = 0
                         self.cursor.y += 1
                         self.update_state()
-                case input_handler.BACKSPACE: # backspace
+                case keys.BACKSPACE: # backspace
                     if self.cursor.x == 0 and self.cursor.y == 0:
                         pass
                     elif self.cursor.x == 0:

@@ -2,10 +2,7 @@ import sys
 import termios
 import time
 import tty
-try:
-    from parts.input_handler import BaseInputHandler
-except ModuleNotFoundError:
-    from input_handler import BaseInputHandler
+from deadpad.parts.input_handler import BaseInputHandler
 
 def getch():
     fd = sys.stdin.fileno()

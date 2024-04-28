@@ -3,10 +3,7 @@ import sys
 import threading as th
 from queue import Queue
 import time
-try:
-    from parts.input_handler import BaseInputHandler
-except ModuleNotFoundError:
-    from input_handler import BaseInputHandler
+from deadpad.parts.input_handler import BaseInputHandler
 
 def getch():
     ch = ms.getch()

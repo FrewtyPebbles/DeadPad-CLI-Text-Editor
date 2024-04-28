@@ -8,9 +8,9 @@ import sys
 import time
 import shutil
 from typing import TYPE_CHECKING
-from parts import input_handler
-from parts.document import Document, str_weight
-from parts.themes import RESET_STYLE, get_style
+from deadpad.parts import keys
+from deadpad.parts.document import Document, str_weight
+from deadpad.parts.themes import RESET_STYLE, get_style
 if TYPE_CHECKING:
     from deadpad import Editor
 
@@ -49,7 +49,7 @@ class TextScreen:
         self.edit_mode = True
         self.running = True
         self.master = master
-        self.theme_data = json.load(f_p:=open(self.master.settings["theme"], "r", encoding="utf8"))
+        self.theme_data = json.load(f_p:=open(f"{self.master.themes_path}{self.master.settings['theme']}.json", "r", encoding="utf8"))
         f_p.close()
         self.updated = True
         
@@ -74,7 +74,7 @@ class TextScreen:
         self.updated = True
     
     def refresh(self):
-        self.theme_data = json.load(f_p:=open(self.master.settings["theme"], "r", encoding="utf8"))
+        self.theme_data = json.load(f_p:=open(f"{self.master.themes_path}{self.master.settings['theme']}.json", "r", encoding="utf8"))
         f_p.close()
         self.updated = True
 
@@ -168,25 +168,25 @@ class TextScreen:
             self.footer_string = self.document.file_path if self.footer_string in {"COMMAND MODE",self.document.file_path} else self.footer_string
             
             match key:
-                case input_handler.CTRL_W: # ctrl w
+                case keys.CTRL_W: # ctrl w
                     self.footer_string = f"Last saved to '{self.document.file_path}' at {datetime.datetime.now()}. 📀"
-                case input_handler.ESC: # esc
+                case keys.ESC: # esc
                     self.footer_string = f"EXITING"
                     self.running = False
                 case b'\n': # enter
                     if self.cursor_y == self.height:
                         self.y_pos += 1
-                case input_handler.BACKSPACE: # backspace
+                case keys.BACKSPACE: # backspace
                     if self.cursor_y == 0:
                         self.y_pos -= 1
-                case input_handler.CTRL_O: # ctrl \
+                case keys.CTRL_O: # ctrl \
                     self.edit_mode = False
                     self.footer_string = "COMMAND MODE"
                     return
-                case input_handler.UP: # up
+                case keys.UP: # up
                     if self.cursor_y == 0:
                         self.y_pos -= 1
-                case input_handler.DOWN: # down
+                case keys.DOWN: # down
                     if self.cursor_y == self.height:
                         self.y_pos += 1
             self.document.handle_key(key)
@@ -199,14 +199,14 @@ class TextScreen:
             while (curr_key := self.master.in_handler.get()) != b'\n':
                 if curr_key != None:
                     match curr_key:
-                        case input_handler.BACKSPACE:
+                        case keys.BACKSPACE:
                             command = command[:cursor_pos-1] + command[cursor_pos:]
                             cursor_pos = max(cursor_pos-1, 0)
-                        case input_handler.LEFT:
+                        case keys.LEFT:
                             cursor_pos = max(cursor_pos-1, 0)
-                        case input_handler.RIGHT:
+                        case keys.RIGHT:
                             cursor_pos = min(cursor_pos+1, len(command))
-                        case input_handler.UP | input_handler.DOWN:
+                        case keys.UP | keys.DOWN:
                             pass
                         case _:
                             try:
