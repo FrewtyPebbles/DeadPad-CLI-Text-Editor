@@ -1,8 +1,12 @@
 import datetime
+import platform
 import sys
 import time
-from parts.windows_input import InputHandler
-from parts.textscreen import TextScreen, move_cursor
+try:
+    from parts.windows_input import InputHandler
+except ModuleNotFoundError:
+    from parts.linux_input import InputHandler
+from parts.textscreen import TextScreen
 import shutil
 from parts.document import Document
 
@@ -11,23 +15,41 @@ class Editor:
     def __init__(self) -> None:
         self.in_handler = InputHandler()
         term_size = shutil.get_terminal_size()
-        self.screen = TextScreen(self, term_size.columns, term_size.lines, Document(term_size.columns, sys.argv[1]))
         self.settings = {
-            "show_paragraphs": False
+            # Toggleables
+            "show_paragraphs": False,
+            "show_tabs": False,
+            "line_numbers": True,
+            # General config
+            "theme": "./themes/default.json",
+            "tab_replace": "\t",
         }
+
+        self.screen = TextScreen(self, term_size.columns, term_size.lines, Document(self, term_size.columns, sys.argv[1]))
 
     def run_command(self, command_str:str):
         tokens = self.get_tokens(command_str)
         if len(tokens) > 0:
             match tokens[0]: # command name
                 case "set": # changes a setting
-                    self.settings[tokens[1]] = self.parse_literal(tokens[2])
+                    self.settings[tokens[1]] = (val:=self.parse_literal(tokens[2]))
+                    self.screen.footer_string = f"Set {tokens[1]} to {repr(val)}"
+                case "toggle": # toggles a setting
+                    self.settings[tokens[1]] = not self.settings[tokens[1]]
                 case "exit":
                     self.screen.footer_string = f"EXITING"
                     self.screen.running = False
                 case "save":
                     self.screen.footer_string = f"Last saved to '{self.screen.document.file_path}' at {datetime.datetime.now()}. 📀"
                     self.screen.document.save()
+                case "refresh":
+                    self.screen.refresh()
+                    self.screen.footer_string = f"Dead Pad Themes, Plugins, and Config refreshed."
+                case "edit":
+                    self.screen.open_document(tokens[1])
+                case _:
+                    self.screen.footer_string = f"Unknown command \"{tokens[0]}\""
+                    
 
     def parse_literal(self, tok:str):
         if tok == "true":
@@ -125,7 +147,7 @@ class Editor:
     def _run_update(self):
         self.screen.handle_key(self.in_handler.get())
         term_size = shutil.get_terminal_size()
-        clear_str = "\033[F\033[K" * (term_size.lines-1)
+        clear_str = "\033[F\033[K" * (term_size.lines-1) if platform.system() == "Windows" else "\033c"
         sys.stdout.write(f"{clear_str}{self.screen.render(term_size.columns, term_size.lines)}")
 
 if __name__ == "__main__":

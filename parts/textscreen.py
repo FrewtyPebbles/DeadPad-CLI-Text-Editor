@@ -2,13 +2,14 @@ from __future__ import annotations
 from dataclasses import dataclass
 import datetime
 from enum import Enum
+import json
 import math
 import sys
 import time
 import shutil
 from typing import TYPE_CHECKING
-from parts.document import Document
-from parts.windows_input import InputHandler
+from parts.document import Document, str_weight
+from parts.themes import RESET_STYLE, get_style
 if TYPE_CHECKING:
     from deadpad import Editor
 
@@ -24,10 +25,11 @@ def line_len(row:list[str]):
     return leng
 
 height_offset = 2
+width_offset = 6
 
 class TextScreen:
     def __init__(self, master:Editor, width:int, height:int, document:Document) -> None:
-        self.width = width - 2
+        self.width = width - width_offset
         self.height = height-height_offset
         self._y_pos = 0
         self.document = document
@@ -38,13 +40,25 @@ class TextScreen:
         Rendering to the document will happen either on save or when the state's position on the document changes.
         """
 
-        self.cursor = '✍ '
         self.state:list[list[None|bytes]] = [[] for _ in range(self.height)]
 
         self.footer_string = document.file_path
         self.edit_mode = True
         self.running = True
         self.master = master
+        self.theme_data = json.load(f_p:=open(self.master.settings["theme"], "r", encoding="utf8"))
+        f_p.close()
+    
+    def open_document(self, path:str):
+        self._y_pos = 0
+        self.document = Document(self.master, self.width, path)
+        self.state = [[] for _ in range(self.height)]
+        self.footer_string = self.document.file_path
+        sys.stdout.write("\033c")
+    
+    def refresh(self):
+        self.theme_data = json.load(f_p:=open(self.master.settings["theme"], "r", encoding="utf8"))
+        f_p.close()
 
     @property
     def y_pos(self):
@@ -67,8 +81,8 @@ class TextScreen:
 
     def render(self, new_width:int = None, new_height:int = None) -> str:
         # Resize terminal
-        dim_changed = self.width != (new_width - 2) or self.height != (new_height - height_offset)
-        self.width = new_width - 2 if new_width else self.width
+        dim_changed = self.width != (new_width - width_offset) or self.height != (new_height - height_offset)
+        self.width = new_width - width_offset if new_width else self.width
         self.height = new_height - height_offset if new_height else self.height
         if dim_changed:
             self.state = [[] for _ in range(self.height)]
@@ -83,32 +97,47 @@ class TextScreen:
         doc_state = self.document.state[max(self.y_pos, 0):min(self.y_pos + self.height, self.document.height)]
 
         for ln, line in enumerate(doc_state):
-            self.state[ln] = [char for char in line[:self.width]]
+            self.state[ln] = [char for char in line]
             
-            while len(self.state[ln]) != self.width:
+            # add spaces to rhs of text accounting for tabs
+            while str_weight(self.state[ln]) < self.width:
                 self.state[ln].append(None)
             
 
         for y, row in enumerate(self.state):
+            if self.master.settings["line_numbers"]:
+
+                screen += f"{get_style(bg=self.theme_data['line_number_bg'])}{(y+self.y_pos+1):^4}{get_style(bg=self.theme_data['editor_bg'])}|"
             for x, col in enumerate(row):
                 if col != None:
                     if y == self.cursor_y and x == self.cursor_x:
-                        if col == '\n':
-                            screen += self.cursor
+                        if col in {'\n', ' '}:
+                            screen += self.theme_data["cursor_sym"]
+                        elif col == '\t':
+                            screen += self.theme_data["cursor_sym"] + self.theme_data["tab_sym"][1:len(self.theme_data["tab_sym"])] if self.master.settings["show_tabs"] else self.theme_data["cursor_sym"] + (' ' * (len(self.theme_data["tab_sym"])-1))
                         else:
-                            screen += self.cursor + col
-                    elif col == '\n':
-                        screen += '¶' if self.master.settings["show_paragraphs"] else ''
+                            screen += self.theme_data["cursor_sym"] + col
                     else:
-                        screen += col
-                elif y == self.cursor_y and x == self.cursor_x:
-                    screen += self.cursor
-            if col != '\n':
-                screen += '\n'
+                        match col:
+                            case '\n':
+                                screen += self.theme_data["paragraph_sym"] if self.master.settings["show_paragraphs"] else ''
 
-        footer_bg = "❚" * (self.width - len(self.footer_string)-5)
+                            case '\t':
+                                screen += self.theme_data["tab_sym"] if self.master.settings["show_tabs"] else (' ' * len(self.theme_data["tab_sym"]))
+
+                            case _:
+                                screen += col
+                elif y == self.cursor_y and x == self.cursor_x:
+                    screen += self.theme_data["cursor_sym"]
+                else:
+                    screen += ' '
+            if col != '\n':
+                screen += f'\n{RESET_STYLE}'
+
+        bchar = self.theme_data['CLI_bar_filler_char']
+        footer_bg = bchar * (self.width - len(self.footer_string)-5)
         padding = ' ' if self.footer_string != "" else ''
-        return f"{screen}\033[K💀 ❚{padding}{self.footer_string}{padding}{footer_bg}\n\033[K"
+        return f"{screen}\033[K{self.theme_data['emblem']} {bchar}{padding}{self.footer_string}{padding}{footer_bg}\n\033[K"
     
     def handle_key(self, key:bytes):
         if self.edit_mode:
@@ -142,6 +171,6 @@ class TextScreen:
             self.document.handle_key(key)
         else:
             # this is for doing commands
-            self.master.run_command(input("=☠ |"))
+            self.master.run_command(input(self.theme_data['CLI_prefix']))
             sys.stdout.write("\033c")
             self.edit_mode = True

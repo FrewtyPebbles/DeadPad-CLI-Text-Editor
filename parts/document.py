@@ -5,15 +5,51 @@ import datetime
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from parts.textscreen import TextScreen
+    from deadpad import Editor
+
+def chrweight(char:str):
+    match char:
+        case "\t":
+            return 3
+        case None: # equivalent of space in textscreen
+            return 1
+        case _:
+            return 1
+        
+def str_weight(string:str):
+    weight = 0
+    for char in string:
+        weight += chrweight(char)
+    return weight
+
+def chunk_str_by_weight(string:str, chunk_size:int):
+    chunks:list[str] = []
+    str_buff = ""
+    chr_ind = 0
+    while chr_ind < len(string):
+        str_buff = ""
+        while (str_weight(str_buff) + chrweight(string[chr_ind])) < chunk_size \
+        if chr_ind < len(string) else False:
+            str_buff += string[chr_ind]
+            chr_ind += 1
+        chunks.append(str_buff)
+        
+    return chunks
 
 def newline_chunkstring(string:str, length:int):
     
-    ret = []
+    ret:list[str] = []
     for chunk in string.splitlines(True):
-        chunks = [chunk[0+i:length+i] for i in range(0, len(chunk), length)]
+        # TODO split into chunks based on actual size since tabs are bigger
+        chunks = chunk_str_by_weight(chunk, length)
+        #chunks = [chunk[0+i:length+i] for i in range(0, len(chunk), length)]
         for sub_chunk in chunks:
             ret.append(sub_chunk)
     return ret
+
+if __name__ == "__main__":
+    for chunk in newline_chunkstring("\t\t\twjdkjwkj       djk wdja hwhdgjiwa dj \t \t\twjdjwkjdkk\n", 20):
+        print(repr(chunk))
 
 class CursorPosition:
     def __init__(self, x:int, y:int, owner:Document) -> None:
@@ -62,16 +98,17 @@ class CursorPosition:
         self._x = val
 
 class Document:
-    def __init__(self, render_width:int, file_path:str) -> None:
+    def __init__(self, master:Editor, render_width:int, file_path:str) -> None:
         self.file_path = file_path
         self.state:list[str] = [""]
         self.cursor = CursorPosition(0,0,self)
         self._recording_arrow = False
         self.render_width = render_width - 2
-        self.file = open(self.file_path, "r+")
+        self.file = open(self.file_path, "r+", encoding="utf8")
         t_str_state = self.file.read()
         self.str_state = t_str_state if t_str_state[-1] == "\n" else t_str_state + "\n"
         self.state = newline_chunkstring(self.str_state, self.render_width)
+        self.master = master
 
     def __del__(self):
         self.file.close()
@@ -139,6 +176,11 @@ class Document:
                         else:
                             self.state[self.cursor.y] = self.state[self.cursor.y][:self.cursor.x-1] + self.state[self.cursor.y][self.cursor.x:]
                             self.cursor.x -= 1
+                            self.update_state()
+                    case b'\t':
+                        for char in self.master.settings["tab_replace"]:
+                            self._insert_character(char.encode(), self.cursor.x, self.cursor.y)
+                            self.cursor.x += 1
                             self.update_state()
                     case _:
                         
