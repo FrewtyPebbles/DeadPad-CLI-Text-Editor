@@ -17,6 +17,9 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 
+[project.scripts]
+deadpad = "deadpad:main"
+
 [project.urls]
 Homepage = "https://github.com/FrewtyPebbles/DeadPad-CLI-Text-Editor"
 Issues = "https://github.com/FrewtyPebbles/DeadPad-CLI-Text-Editor/issues"

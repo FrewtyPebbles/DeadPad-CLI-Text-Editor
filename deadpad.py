@@ -165,6 +165,8 @@ class Editor:
             self.screen.render(self.term_size.columns, self.term_size.lines)
             sys.stdout.write(f"{clear_str}{self.screen.render(self.term_size.columns, self.term_size.lines)}")
 
-if __name__ == "__main__":
+def main():
     editor = Editor()
     editor.run()
+if __name__ == "__main__":
+    main()
