@@ -8,6 +8,7 @@ import sys
 import time
 import shutil
 from typing import TYPE_CHECKING
+from parts import input_handler
 from parts.document import Document, str_weight
 from parts.themes import RESET_STYLE, get_style
 if TYPE_CHECKING:
@@ -26,6 +27,8 @@ def line_len(row:list[str]):
 
 height_offset = 2
 width_offset = 6
+
+escapes = b''.join([chr(char).encode() for char in range(1, 32)])
 
 class TextScreen:
     def __init__(self, master:Editor, width:int, height:int, document:Document) -> None:
@@ -156,43 +159,69 @@ class TextScreen:
         bchar = self.theme_data['CLI_bar_filler_char']
         footer_bg = bchar * (self.width - len(self.footer_string)-5)
         padding = ' ' if self.footer_string != "" else ''
-        return f"{screen}\033[K{self.theme_data['emblem']} {bchar}{padding}{self.footer_string}{padding}{footer_bg}\n\033[K"
+        return f"{screen}\033[K{self.theme_data['emblem']} {bchar}{padding}{self.footer_string}{padding}{footer_bg}\n\033[K{' '*self.width}"
     
     def handle_key(self, key:bytes):
         if key != None:
             self.updated = True
         if self.edit_mode:
             self.footer_string = self.document.file_path if self.footer_string in {"COMMAND MODE",self.document.file_path} else self.footer_string
-            if self.document._recording_arrow:
-                # move y_pos if y is at the bottom or top
-                match key:
-                    case b'H': # up
-                        if self.cursor_y == 0:
-                            self.y_pos -= 1
-                    case b'P': # down
-                        if self.cursor_y == self.height:
-                            self.y_pos += 1
-            else:
-                match key:
-                    case b'\x17': # ctrl w
-                        self.footer_string = f"Last saved to '{self.document.file_path}' at {datetime.datetime.now()}. 📀"
-                    case b'\x1b': # esc
-                        self.footer_string = f"EXITING"
-                        self.running = False
-                    case b'\n': # enter
-                        if self.cursor_y == self.height:
-                            self.y_pos += 1
-                    case b'\x08': # enter
-                        if self.cursor_y == 0:
-                            self.y_pos -= 1
-                    case b'\x1c': # ctrl \
-                        self.edit_mode = False
-                        self.footer_string = "COMMAND MODE"
-                        return
+            
+            match key:
+                case input_handler.CTRL_W: # ctrl w
+                    self.footer_string = f"Last saved to '{self.document.file_path}' at {datetime.datetime.now()}. 📀"
+                case input_handler.ESC: # esc
+                    self.footer_string = f"EXITING"
+                    self.running = False
+                case b'\n': # enter
+                    if self.cursor_y == self.height:
+                        self.y_pos += 1
+                case input_handler.BACKSPACE: # backspace
+                    if self.cursor_y == 0:
+                        self.y_pos -= 1
+                case input_handler.CTRL_O: # ctrl \
+                    self.edit_mode = False
+                    self.footer_string = "COMMAND MODE"
+                    return
+                case input_handler.UP: # up
+                    if self.cursor_y == 0:
+                        self.y_pos -= 1
+                case input_handler.DOWN: # down
+                    if self.cursor_y == self.height:
+                        self.y_pos += 1
             self.document.handle_key(key)
         else:
+            sys.stdout.write(f"\r\033[K{self.theme_data['CLI_prefix']}{' ' * (self.width - len(self.theme_data['CLI_prefix']))}")
+            sys.stdout.flush()
             # this is for doing commands
-            self.master.run_command(input(self.theme_data['CLI_prefix']))
+            command = b""
+            cursor_pos = 0
+            while (curr_key := self.master.in_handler.get()) != b'\n':
+                if curr_key != None:
+                    match curr_key:
+                        case input_handler.BACKSPACE:
+                            command = command[:cursor_pos-1] + command[cursor_pos:]
+                            cursor_pos = max(cursor_pos-1, 0)
+                        case input_handler.LEFT:
+                            cursor_pos = max(cursor_pos-1, 0)
+                        case input_handler.RIGHT:
+                            cursor_pos = min(cursor_pos+1, len(command))
+                        case input_handler.UP | input_handler.DOWN:
+                            pass
+                        case _:
+                            try:
+                                curr_key = curr_key.translate(None, escapes)
+                                command = command[:cursor_pos] + curr_key + command[cursor_pos:]
+                                cursor_pos = min(cursor_pos+1, len(command))
+                            except UnicodeDecodeError:
+                                pass
+                    com_dec = command.decode()
+                    lhs_str = f"{self.theme_data['CLI_prefix']}{com_dec[:cursor_pos]}{self.theme_data['cursor_sym']}{com_dec[cursor_pos:]}"
+                    padding = ' ' * (self.width - len(lhs_str))
+                    sys.stdout.write(f"\r\033[K{lhs_str}{padding}")
+                    sys.stdout.flush()
+            self.master.run_command(command.decode())
             sys.stdout.write("\033c")
             self.edit_mode = True
             self.updated = True
+

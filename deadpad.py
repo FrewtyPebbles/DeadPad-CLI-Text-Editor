@@ -139,10 +139,19 @@ class Editor:
 
         
     def run(self):
+        try:
+            import termios
+            orig = termios.tcgetattr(sys.stdin.fileno())
+        except ModuleNotFoundError:
+            pass
         self.in_handler.start()
         while self.screen.running:
             self._run_update()
         self.in_handler.stop()
+        try:
+            termios.tcsetattr(sys.stdin.fileno(), termios.TCSADRAIN, orig)
+        except UnboundLocalError:
+            pass
         sys.stdout.write("\033c")
         
     def _run_update(self):
@@ -152,7 +161,7 @@ class Editor:
          or term_size.lines != self.term_size.lines\
          or term_size.columns != self.term_size.columns:
             self.term_size = term_size
-            clear_str = "\033[F\033[K" * (self.term_size.lines) if opsys == "Windows" else "\033c"
+            clear_str = "\033[F\033[K" * (self.term_size.lines)
             self.screen.render(self.term_size.columns, self.term_size.lines)
             sys.stdout.write(f"{clear_str}{self.screen.render(self.term_size.columns, self.term_size.lines)}")
 

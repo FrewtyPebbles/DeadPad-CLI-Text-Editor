@@ -1,21 +1,23 @@
 import sys
 import termios
-import threading as th
-from queue import Queue
+import time
 import tty
-from parts.input_handler import BaseInputHandler
-
+try:
+    from parts.input_handler import BaseInputHandler
+except ModuleNotFoundError:
+    from input_handler import BaseInputHandler
 
 def getch():
     fd = sys.stdin.fileno()
-    old_settings = termios.tcgetattr(fd)
-    try:
-        tty.setraw(sys.stdin.fileno())
-        ch = sys.stdin.read(1)
- 
-    finally:
-        termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
-    return ch.encode()
+    orig = termios.tcgetattr(fd)
+
+    tty.setcbreak(fd)
+    ch = sys.stdin.read(1).encode()
+    if ch == b"\x1b":# if it is an arrow key read the rest of the bytes
+        ch += sys.stdin.read(2).encode()
+    termios.tcsetattr(fd, termios.TCSAFLUSH, orig)
+    return ch
+    
 
 class InputHandler(BaseInputHandler):
 
@@ -24,4 +26,18 @@ class InputHandler(BaseInputHandler):
             if self.input_queue.full():
                 self.input_queue.get(False)
                 self.input_queue.get(False)
-            self.input_queue.put(self.filter_key(getch()), False)
+            if sys.stdin.isatty():
+                self.input_queue.put(self.filter_key(getch()), False)
+
+
+if __name__ == "__main__":
+    ih = InputHandler()
+    ih.start()
+    while True:
+        if (char := ih.get()) != None:
+            print(repr(char))
+            if char == b'~':
+                break
+        time.sleep(0.1)
+    ih.stop()
+        

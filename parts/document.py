@@ -3,6 +3,8 @@ from enum import Enum
 import sys
 import datetime
 from typing import TYPE_CHECKING
+
+from parts import input_handler
 if TYPE_CHECKING:
     from parts.textscreen import TextScreen
     from deadpad import Editor
@@ -96,6 +98,8 @@ class CursorPosition:
 
         self._x = val
 
+escapes = b''.join([chr(char).encode() for char in range(1, 32)])
+
 class Document:
     def __init__(self, master:Editor, render_width:int, file_path:str) -> None:
         self.file_path = file_path
@@ -137,63 +141,62 @@ class Document:
 
     def handle_key(self, key:bytes):
         if key != None:
-            if self._recording_arrow:
-                match key:
-                    case b'H': # up
-                        self.cursor.y -= 1
-                    case b'P': # down
-                        if not (self.cursor.y == len(self.state)-1):
-                            self.cursor.y += 1
-                    case b'K': # left
-                        if not (self.cursor.x == 0 and \
-                        self.cursor.y == 0):
-                            self.cursor.x -= 1
-                    case b'M': # right
-                        if not (self.cursor.x == len(self.state[-1])-1 and \
-                        self.cursor.y == len(self.state)-1):
-                            self.cursor.x += 1
-                self._recording_arrow = False
-            else:
-                match key:
-                    case b'\xe0':# arrow_keys
-                        self._recording_arrow = True
-                        
-                    case b'\x17': # ctrl w
-                        self.save()
-                    case b'\n': # enter
-                        # TODO Make it drop text to the next line
-                        self._insert_character(key, self.cursor.x, self.cursor.y)
-                        if self.cursor.x == len(self.state[-1])-2 and \
-                        self.cursor.y == len(self.state)-1:
-                            self.update_state()
-                            self.cursor.x += 1
-                        else:
-                            self.cursor.x = 0
-                            self.cursor.y += 1
-                            self.update_state()
-                    case b'\x08': # backspace
-                        if self.cursor.x == 0 and self.cursor.y == 0:
-                            pass
-                        elif self.cursor.x == 0:
-                            line_len = len(self.state[self.cursor.y])
-                            self.state[self.cursor.y-1] = self.state[self.cursor.y-1][:-1]
-                            
-                            self.update_state()
-                            self.cursor.x -= line_len
-                        else:
-                            self.state[self.cursor.y] = self.state[self.cursor.y][:self.cursor.x-1] + self.state[self.cursor.y][self.cursor.x:]
-                            self.cursor.x -= 1
-                            self.update_state()
-                    case b'\t':
-                        
-                        self._insert_character(self.master.settings["tab_replace"].encode(), self.cursor.x, self.cursor.y)
-                        self.cursor.x += len(self.master.settings["tab_replace"])
+            
+            match key:
+                case input_handler.UP: # up
+                    self.cursor.y -= 1
+                case input_handler.DOWN: # down
+                    if not (self.cursor.y == len(self.state)-1):
+                        self.cursor.y += 1
+                case input_handler.LEFT: # left
+                    if not (self.cursor.x == 0 and \
+                    self.cursor.y == 0):
+                        self.cursor.x -= 1
+                case input_handler.RIGHT: # right
+                    if not (self.cursor.x == len(self.state[-1])-1 and \
+                    self.cursor.y == len(self.state)-1):
+                        self.cursor.x += 1
+                    
+                case input_handler.CTRL_W: # ctrl w
+                    self.save()
+                case b'\n': # enter
+                    # TODO Make it drop text to the next line
+                    self._insert_character(key, self.cursor.x, self.cursor.y)
+                    if self.cursor.x == len(self.state[-1])-2 and \
+                    self.cursor.y == len(self.state)-1:
                         self.update_state()
-                    case _:
+                        self.cursor.x += 1
+                    else:
+                        self.cursor.x = 0
+                        self.cursor.y += 1
+                        self.update_state()
+                case input_handler.BACKSPACE: # backspace
+                    if self.cursor.x == 0 and self.cursor.y == 0:
+                        pass
+                    elif self.cursor.x == 0:
+                        line_len = len(self.state[self.cursor.y])
+                        self.state[self.cursor.y-1] = self.state[self.cursor.y-1][:-1]
                         
+                        self.update_state()
+                        self.cursor.x -= line_len
+                    else:
+                        self.state[self.cursor.y] = self.state[self.cursor.y][:self.cursor.x-1] + self.state[self.cursor.y][self.cursor.x:]
+                        self.cursor.x -= 1
+                        self.update_state()
+                case b'\t':
+                    
+                    self._insert_character(self.master.settings["tab_replace"].encode(), self.cursor.x, self.cursor.y)
+                    self.cursor.x += len(self.master.settings["tab_replace"])
+                    self.update_state()
+                case _:
+                    try:
+                        
+                        key = key.translate(None, escapes)
                         self._insert_character(key, self.cursor.x, self.cursor.y)
                         self.cursor.x += 1
                         self.update_state()
+                    except UnicodeDecodeError:
+                        pass
             
             
         
