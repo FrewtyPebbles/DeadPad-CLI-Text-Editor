@@ -4,7 +4,12 @@ Install:
 ```
 pip install deadpad
 ```
+
 Run:
+
+```
+deadpad <filename>
+```
 
 > A command line text editor made without curses or any other TUI library.
 

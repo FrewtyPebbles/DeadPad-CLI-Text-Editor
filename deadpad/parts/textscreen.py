@@ -169,7 +169,10 @@ class TextScreen:
             
             match key:
                 case keys.CTRL_W: # ctrl w
-                    self.footer_string = f"Last saved to '{self.document.file_path}' at {datetime.datetime.now()}. 📀"
+                    # TODO make save message show maximum ammount of characters in file path.
+                    flpw = math.floor(self.width/8)
+                    filep = (self.document.file_path[:flpw]+'...') if len(self.document.file_path) > (flpw+3) else self.document.file_path    
+                    self.footer_string = f"Last saved '{filep}' at {datetime.datetime.now()}. 📀"
                 case keys.ESC: # esc
                     self.footer_string = f"EXITING"
                     self.running = False

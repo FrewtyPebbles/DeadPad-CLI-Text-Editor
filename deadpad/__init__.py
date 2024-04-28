@@ -45,13 +45,16 @@ class Editor:
                     self.screen.footer_string = f"EXITING"
                     self.screen.running = False
                 case "save":
-                    self.screen.footer_string = f"Last saved to '{self.screen.document.file_path}' at {datetime.datetime.now()}. 📀"
+                    self.screen.footer_string = f"Last saved '{self.screen.document.file_path[:7]}' at {datetime.datetime.now()}. 📀"
                     self.screen.document.save()
                 case "refresh":
                     self.screen.refresh()
                     self.screen.footer_string = f"Dead Pad Themes, Plugins, and Config refreshed."
                 case "edit":
                     self.screen.open_document(tokens[1])
+                
+                case "ls":
+                    self.screen.footer_string = ", ".join(os.listdir())
                 case _:
                     self.screen.footer_string = f"Unknown command \"{tokens[0]}\""
                     
