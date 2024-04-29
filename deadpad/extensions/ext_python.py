@@ -1,5 +1,7 @@
+from dataclasses import dataclass
 from enum import Enum
 import sys
+from typing import Generic, Iterable, TypeVar
 
 FILE_EXT = "py"
 
@@ -99,16 +101,18 @@ class Token:
         return f"t'{self.tok_value}'"
 
     def __str__(self):
-        return f"{self.tok_value}"
+        return f"(STRING)\"{self.tok_value}\"" if self.tok_type == TokType.string else f"{self.tok_value}"
 
     @classmethod
     def from_raw(cls, raw_str:str, col_num:int, line_num:int, override_type:TokType = None):
+        # str and bytes literals are handled by override_type
+        if override_type:
+            return Token(override_type, raw_str, col_num, line_num)
+        
         try:
             return Token(TokType(raw_str), raw_str, col_num, line_num)
         except ValueError:
-            # str and bytes literals are handled by override_type
-            if override_type != None:
-                return Token(override_type, raw_str, col_num, line_num)
+            
             # This is where we will do type parsing
             assume_num_str = raw_str.lstrip("-")
             if assume_num_str.isdigit():
@@ -125,7 +129,16 @@ class Token:
                 except ValueError:
                     return Token(TokType.label, raw_str, col_num, line_num)
 
+T = TypeVar('T')
 
+class Src(Generic[T]):
+    def __init__(self, collection:Iterable[T]) -> None:
+        self.iter = iter(collection)
+        self.l_n = 1
+        self.c_n = 1
+
+    def __iter__(self):
+        return self.iter
 
 class Parser:
 
@@ -138,39 +151,73 @@ class Parser:
 
     def tokenize(self, src:str):
         # This function returns a list of `Token`s
-        lines = enumerate(src.splitlines())
+        src:Src[str] = Src(src)
         tokens:list[Token] = []
-        tok_buff = ""
+        self.tokenize_code_context(tokens, src)
         
-        l_n = 0
-        c_n = 0
-
-        def append_tok(tok_str:str = None):
-            nonlocal tok_buff
-            if tok_str == None:
-                if len(tok_buff) != 0:
-                    tokens.append(Token.from_raw(tok_buff, c_n, l_n))
-                    tok_buff = ""
-            else:
-                tokens.append(Token.from_raw(tok_str, c_n, l_n))
-                
-        for l_n, line in lines:
-            for c_n, char in enumerate(line):
-                match char:
-                    case '+'|'-'|'*'|'/'|'@'|'='|'~'|'(' \
-                    |')'|'{'|'}'|'['|']'|':'|'.'|'&'|' '|'\t'|'\\':
-                        append_tok()
-                        append_tok(char)
-                    case '"'|'\'':
-                        pass # TODO make string parsing context
-                        # will likely need to move this loop to its own context so that we can use it again for format strings.
-                    case _:
-                        tok_buff += char
-            append_tok()
-            append_tok('\n')
         return tokens
+    
+    def tokenize_code_context(self, tokens:list[Token], src:Src[str]):
+        tok_buff = ""
+        for char in src:
+            match char:
+                case '\r':
+                    pass
+                case '+'|'-'|'*'|'/'|'@'|'='|'~'|'(' \
+                |')'|'{'|'}'|'['|']'|':'|'.'|'&'|' '|'\t'|'\\':
+                    append_tok(tokens, src.c_n, src.l_n, tok_buff=tok_buff)
+                    tok_buff = ""
+                    append_tok(tokens, src.c_n, src.l_n, char)
+                case '"'|'\'':
+                    append_tok(tokens, src.c_n, src.l_n, tok_buff=tok_buff)
+                    tok_buff = ""
+                    self.tokenize_str_context(tokens, src, char)
+                case '\n':
+                    append_tok(tokens, src.c_n, src.l_n, tok_buff=tok_buff)
+                    tok_buff = ""
+                    append_tok(tokens, src.c_n, src.l_n, '\n')
+                    src.c_n = 1
+                    src.l_n += 1
+                case _:
+                    tok_buff += char
+
+            src.c_n += 1
+    
+    def tokenize_str_context(self, tokens:list[Token], src:Src[str], str_tok:str):
+        tok_buff = ""
+        escape=False
+        for char in src:
+            match char:
+                case '\''|'"':
+                    # end string
+                    if char == str_tok and not escape:
+                        tokens.append(Token.from_raw(tok_buff, src.c_n, src.l_n, TokType.string))
+                        return
+                    else:
+                        tok_buff += char
+                        escape = False
+                case '\n':
+                    tok_buff += char
+                    escape = False
+                    src.c_n = 1
+                    src.l_n += 1
+                case _:
+                    if char == '\\':
+                        # TODO BUG escape not working
+                        escape = not escape
+                    elif escape:
+                        escape = False
+                    tok_buff += char
+
+            src.c_n += 1
 
 
+def append_tok(tokens:list[Token], c_n:int, l_n:int, tok_str:str = None, tok_buff:str = ""):
+    if tok_str == None:
+        if tok_buff != "":
+            tokens.append(Token.from_raw(tok_buff, c_n, l_n))
+    else:
+        tokens.append(Token.from_raw(tok_str, c_n, l_n))
 
 
 if __name__ == "__main__":
