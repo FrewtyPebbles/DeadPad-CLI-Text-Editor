@@ -9,6 +9,9 @@ if TYPE_CHECKING:
     from deadpad.parts.textscreen import TextScreen
     from deadpad import Editor
 
+# TODO Make a property for the state that runs all activated extensions on the code before the state is used by the TextScreen
+
+
 def chrweight(char:str):
     match char:
         case "\t":
