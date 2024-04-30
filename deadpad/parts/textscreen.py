@@ -141,7 +141,7 @@ class TextScreen:
 
         for y, row in enumerate(self.state):
             if self.master.settings["line_numbers"]:
-
+                # TODO: move line numbers to a second pass so we can highlight all of the code in one pass
                 screen += f"{get_style(bg=self.theme_data['line_number_bg'])}{(y+self.y_pos+1):^4}{RESET_STYLE}|"
             src_line = ""
             for x, col in enumerate(row):

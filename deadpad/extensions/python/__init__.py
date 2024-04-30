@@ -261,10 +261,9 @@ class Parser:
                         tok_buff += char
                         escape = False
                 case '\n':
-                    tokens.append(Token.from_raw(str_tok+ tok_buff, src.c_n, src.l_n, TokType.misc_unclosed_str))
+                    tok_buff += '\n'
                     src.c_n = 1
                     src.l_n += 1
-                    return
                 case _:
                     if char == '\\':
                         # TODO BUG escape not working
@@ -274,7 +273,7 @@ class Parser:
                     tok_buff += char
 
             src.c_n += 1
-        tokens.append(Token.from_raw(str_tok+ tok_buff, src.c_n, src.l_n, TokType.misc_unclosed_str))
+        tokens.append(Token.from_raw(str_tok + tok_buff, src.c_n, src.l_n, TokType.misc_unclosed_str))
         src.c_n = 1
         src.l_n += 1
 
