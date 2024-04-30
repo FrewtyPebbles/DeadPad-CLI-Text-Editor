@@ -1,7 +1,11 @@
 import datetime
+import importlib
 import os
 import platform
 import sys
+import time
+from types import ModuleType
+from deadpad.parts.extension import Extension
 from deadpad.parts.textscreen import TextScreen
 import shutil
 from deadpad.parts.document import Document
@@ -11,8 +15,6 @@ except ModuleNotFoundError:
     from deadpad.parts.linux_input import InputHandler
 
 opsys = platform.system()
-
-
 
 class Editor:
     "The main class for the python based CLI text editor Dead Pad"
@@ -29,8 +31,16 @@ class Editor:
             "theme": f"default",
             "tab_replace": "\t",
         }
-        
+        self.extensions:dict[str, Extension] = self.get_extensions()
+
         self.screen = TextScreen(self, self.term_size.columns, self.term_size.lines, Document(self, self.term_size.columns, sys.argv[1]))
+        
+
+    def get_extensions(self):
+        modules:dict[str, Extension] = {}
+        for extension in os.listdir(f"{os.path.dirname(__file__)}/extensions"):
+            modules[extension] = Extension(self, extension, importlib.import_module(f"deadpad.extensions.{extension}"))
+        return modules
 
     def run_command(self, command_str:str):
         tokens = self.get_tokens(command_str)
@@ -169,6 +179,7 @@ class Editor:
             clear_str = "\033[F\033[K" * (self.term_size.lines)
             self.screen.render(self.term_size.columns, self.term_size.lines)
             sys.stdout.write(f"{clear_str}{self.screen.render(self.term_size.columns, self.term_size.lines)}")
+
 
 def main():
     editor = Editor()

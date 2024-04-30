@@ -7,7 +7,7 @@ import math
 import sys
 import time
 import shutil
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Callable
 from deadpad.parts import keys
 from deadpad.parts.document import Document, str_weight
 from deadpad.parts.themes import RESET_STYLE, get_style
@@ -57,6 +57,7 @@ class TextScreen:
         self.document.render_width = self.width
         self.document.update_state()
         sys.stdout.write("\033c")
+        self.get_extensions()
         
 
     def check_update(self):
@@ -72,6 +73,18 @@ class TextScreen:
         self.footer_string = self.document.file_path
         sys.stdout.write("\033c")
         self.updated = True
+        self.get_extensions()
+        
+    def get_extensions(self):
+        self.highlight:Callable[[str], str] = lambda src: src
+        "The current active syntax highlighter."
+
+        file_ext = self.document.file_path.split(".")[-1]
+        for extension in self.master.extensions.values():
+            if extension.FILE_EXT == file_ext:
+                if extension.parser:
+                    self.highlight = extension.parser.highlight
+                    
     
     def refresh(self):
         self.theme_data = json.load(f_p:=open(f"{self.master.themes_path}{self.master.settings['theme']}.json", "r", encoding="utf8"))
@@ -129,38 +142,41 @@ class TextScreen:
         for y, row in enumerate(self.state):
             if self.master.settings["line_numbers"]:
 
-                screen += f"{get_style(bg=self.theme_data['line_number_bg'])}{(y+self.y_pos+1):^4}{get_style(bg=self.theme_data['editor_bg'])}|"
+                screen += f"{get_style(bg=self.theme_data['line_number_bg'])}{(y+self.y_pos+1):^4}{RESET_STYLE}|"
+            src_line = ""
             for x, col in enumerate(row):
                 if col != None:
                     if y == self.cursor_y and x == self.cursor_x:
                         if col in {'\n', ' '}:
-                            screen += self.theme_data["cursor_sym"]
+                            src_line += self.theme_data["cursor_sym"]
                         elif col == '\t':
-                            screen += self.theme_data["cursor_sym"] + self.theme_data["tab_sym"][1:len(self.theme_data["tab_sym"])] if self.master.settings["show_tabs"] else self.theme_data["cursor_sym"] + (' ' * (len(self.theme_data["tab_sym"])-1))
+                            src_line += self.theme_data["cursor_sym"] + self.theme_data["tab_sym"][1:len(self.theme_data["tab_sym"])] if self.master.settings["show_tabs"] else self.theme_data["cursor_sym"] + (' ' * (len(self.theme_data["tab_sym"])-1))
                         else:
-                            screen += self.theme_data["cursor_sym"] + col
+                            src_line += self.theme_data["cursor_sym"] + col
                     else:
                         match col:
                             case '\n':
-                                screen += self.theme_data["paragraph_sym"] if self.master.settings["show_paragraphs"] else ''
+                                src_line += self.theme_data["paragraph_sym"] if self.master.settings["show_paragraphs"] else ''
 
                             case '\t':
-                                screen += self.theme_data["tab_sym"] if self.master.settings["show_tabs"] else (' ' * len(self.theme_data["tab_sym"]))
-
+                                src_line += self.theme_data["tab_sym"] if self.master.settings["show_tabs"] else (' ' * len(self.theme_data["tab_sym"]))
                             case _:
-                                screen += col
+                                src_line += col
                 elif y == self.cursor_y and x == self.cursor_x:
-                    screen += self.theme_data["cursor_sym"]
-                else:
-                    screen += ' '
+                    src_line += self.theme_data["cursor_sym"]
+            screen += self.highlight(src_line).replace(" ", " ")
             if col != '\n':
                 screen += f'\n{RESET_STYLE}'
 
+        
+
+        # command bar
         bchar = self.theme_data['CLI_bar_filler_char']
         footer_bg = bchar * (self.width - len(self.footer_string)-5)
         padding = ' ' if self.footer_string != "" else ''
+        
         return f"{screen}\033[K{self.theme_data['emblem']} {bchar}{padding}{self.footer_string}{padding}{footer_bg}\n\033[K{' '*self.width}"
-    
+
     def handle_key(self, key:bytes):
         if key != None:
             self.updated = True

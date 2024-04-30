@@ -117,6 +117,7 @@ class Document:
         self.master = master
         self.updated = True
 
+
     def __del__(self):
         self.file.close()
 

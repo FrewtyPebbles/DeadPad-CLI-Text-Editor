@@ -2,9 +2,13 @@ from dataclasses import dataclass
 from enum import Enum
 import sys
 from typing import Generic, Iterable, TypeVar
-from deadpad.parts.themes import get_style, RESET_STYLE
+from deadpad import Editor
+from deadpad.parts.themes import RESET_STYLE, get_style
 
 FILE_EXT = "py"
+DESCRIPTION = """
+The official python extension made by the creator of DeathPad.
+"""
 
 class TokType(Enum):
     kw_def = "def"
@@ -85,6 +89,7 @@ class TokType(Enum):
     misc_tab = "\t"
     misc_newline = "\n"
     misc_backslash = "\\"
+    misc_unclosed_str = 12
 
     @property
     def is_keyword(self):
@@ -175,12 +180,15 @@ class Src(Generic[T]):
 
 class Parser:
 
-    def __init__(self, src:str, master = None):
+    def __init__(self, master:Editor = None):
         """
         This parses the src str into a python astso it can be used for syntax highlighting and other tooling.
         """
-        self.src = src
         self.master = master
+
+    def highlight(self, src:str):
+        "This syntax highlights the string and returns it."
+        return self.render(self.tokenize(src))
 
     def tokenize(self, src:str):
         # This function returns a list of `Token`s
@@ -219,6 +227,7 @@ class Parser:
                     tok_buff += char
 
             src.c_n += 1
+        append_tok(tokens, src.c_n, src.l_n, tok_buff=tok_buff)
 
     def tokenize_comment_context(self, tokens:list[Token], src:Src[str]):
         tok_buff = "#"
@@ -235,6 +244,7 @@ class Parser:
                     tok_buff += char
 
             src.c_n += 1
+        tokens.append(Token.from_raw(tok_buff, src.c_n, src.l_n, TokType.misc_comment))
     
     def tokenize_str_context(self, tokens:list[Token], src:Src[str], str_tok:str):
         tok_buff = ""
@@ -251,10 +261,10 @@ class Parser:
                         tok_buff += char
                         escape = False
                 case '\n':
-                    tok_buff += char
-                    escape = False
+                    tokens.append(Token.from_raw(str_tok+ tok_buff, src.c_n, src.l_n, TokType.misc_unclosed_str))
                     src.c_n = 1
                     src.l_n += 1
+                    return
                 case _:
                     if char == '\\':
                         # TODO BUG escape not working
@@ -264,6 +274,9 @@ class Parser:
                     tok_buff += char
 
             src.c_n += 1
+        tokens.append(Token.from_raw(str_tok+ tok_buff, src.c_n, src.l_n, TokType.misc_unclosed_str))
+        src.c_n = 1
+        src.l_n += 1
 
     def render(self, tokens:list[Token]):
         ret_str = ""
@@ -271,7 +284,7 @@ class Parser:
             if isinstance(tok, PyExcept):
                 raise RuntimeError(f"The following error occured in the extension ext_python...\n{PyExcept}")
             match tok.tok_type:
-                case TokType.string:
+                case TokType.string | TokType.misc_unclosed_str:
                     ret_str += tok.render("green", style="italic")
                 case _:
                     if tok.tok_type == TokType.misc_comment:
@@ -308,9 +321,10 @@ def append_tok(tokens:list[Token], c_n:int, l_n:int, tok_str:str = None, tok_buf
 
 if __name__ == "__main__":
     src_file = open(sys.argv[1])
-    parser = Parser(src_file.read())
+    src = src_file.read()
+    parser = Parser()
     src_file.close()
-    tokens = parser.tokenize(parser.src)
+    tokens = parser.tokenize(src)
     print(parser.render(tokens))
 
 
