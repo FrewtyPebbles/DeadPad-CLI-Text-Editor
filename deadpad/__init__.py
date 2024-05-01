@@ -22,10 +22,10 @@ class Editor:
     "The main class for the python based CLI text editor Dead Pad"
     def __init__(self) -> None:
         if len(sys.argv) < 2:
-            print(f"\033cUsage: deadpad <filename>")
+            print(f"Usage: deadpad <filename>")
             os._exit(1)
         if not os.path.exists(sys.argv[1]):
-            print(f"\033cERROR: {sys.argv[1]} does not exist.")
+            print(f"ERROR: {sys.argv[1]} does not exist.")
             os._exit(1)
         
         # END CLI GUARDS

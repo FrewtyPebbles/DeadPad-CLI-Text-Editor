@@ -9,11 +9,17 @@ def getch():
     orig = termios.tcgetattr(fd)
 
     tty.setcbreak(fd)
-    ch = sys.stdin.read(1).encode()
-    if ch == b"\x1b":# if it is an arrow key read the rest of the bytes
-        ch += sys.stdin.read(2).encode()
+    inp = sys.stdin.read(1)
+    if inp == "\x1b":# if it is an escape code read the rest of the bytes
+        inp += (ch2 := sys.stdin.read(1))
+        if ch2 == '[':
+            # escape sequence
+            while not (chn := sys.stdin.read(1)).isalpha():
+                inp += chn
+            else:
+                inp += chn
     termios.tcsetattr(fd, termios.TCSAFLUSH, orig)
-    return ch
+    return inp.encode()
     
 
 class InputHandler(BaseInputHandler):
@@ -28,13 +34,18 @@ class InputHandler(BaseInputHandler):
 
 
 if __name__ == "__main__":
+    fd = sys.stdin.fileno()
+    orig = termios.tcgetattr(fd)
     ih = InputHandler()
     ih.start()
+    sys.stdout.write("\x1b[?1003h\x1b[?1015h\x1b[?1006h")
     while True:
         if (char := ih.get()) != None:
             print(repr(char))
             if char == b'~':
                 break
         time.sleep(0.1)
+    sys.stdout.write("\x1b[?1000l")
     ih.stop()
+    termios.tcsetattr(fd, termios.TCSAFLUSH, orig)
         
