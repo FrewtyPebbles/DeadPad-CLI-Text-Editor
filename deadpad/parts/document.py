@@ -112,7 +112,10 @@ class Document:
         self.render_width = render_width - 2
         self.file = open(self.file_path, "r+", encoding="utf8")
         t_str_state = self.file.read()
-        self.str_state = t_str_state if t_str_state[-1] == "\n" else t_str_state + "\n"
+        if t_str_state == "":
+            self.str_state = "\n"
+        else:
+            self.str_state = t_str_state if t_str_state[-1] == "\n" else t_str_state + "\n"
         self.state = newline_chunkstring(self.str_state, self.render_width)
         self.master = master
         self.updated = True
