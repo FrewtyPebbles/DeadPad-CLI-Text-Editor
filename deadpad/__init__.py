@@ -26,12 +26,12 @@ class Editor:
         self.themes_path = f"{os.path.dirname(__file__)}/themes/"
         self.settings = {
             # Toggleables
-            "show_paragraphs": False,
+            "show_newlines": False,
             "show_tabs": False,
-            "line_numbers": False,
+            "show_line_numbers": True,
             # General config
             "theme": f"default",
-            "tab_replace": "\t",
+            "tab": "\t",
         }
         self.extensions:dict[str, Extension] = self.get_extensions()
 

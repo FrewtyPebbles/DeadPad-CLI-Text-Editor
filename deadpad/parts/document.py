@@ -189,8 +189,8 @@ class Document:
                         self.update_state()
                 case b'\t':
                     
-                    self._insert_character(self.master.settings["tab_replace"].encode(), self.cursor.x, self.cursor.y)
-                    self.cursor.x += len(self.master.settings["tab_replace"])
+                    self._insert_character(self.master.settings["tab"].encode(), self.cursor.x, self.cursor.y)
+                    self.cursor.x += len(self.master.settings["tab"])
                     self.update_state()
                 case _:
                     try:

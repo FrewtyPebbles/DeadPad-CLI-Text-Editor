@@ -154,7 +154,7 @@ class TextScreen:
                     else:
                         match col:
                             case '\n':
-                                src_line += self.theme_data["paragraph_sym"] if self.master.settings["show_paragraphs"] else ''
+                                src_line += self.theme_data["paragraph_sym"] if self.master.settings["show_newlines"] else ''
 
                             case '\t':
                                 src_line += self.theme_data["tab_sym"] if self.master.settings["show_tabs"] else (' ' * len(self.theme_data["tab_sym"]))
@@ -181,7 +181,7 @@ class TextScreen:
         lines.pop()
         ret_screen = ""
         for l_n, line in enumerate(lines):
-            if self.master.settings["line_numbers"]:
+            if self.master.settings["show_line_numbers"]:
                 ret_screen += f"{get_style(bg=self.theme_data['line_number_bg'])}{(l_n+self.y_pos+1):^4}{RESET_STYLE}|"
             ret_screen += line + '\n'
         return ret_screen + RESET_STYLE

@@ -5,7 +5,7 @@
     "CLI_color": "white",
     "cursor_sym": "▓",
     "paragraph_sym": "¶",
-    "tab_sym": "-~>",
+    "tab_sym": "└──>",
     "emblem": "💀",
     "CLI_prefix": "=☠ |",
     "CLI_bar_filler_char": "❚",
