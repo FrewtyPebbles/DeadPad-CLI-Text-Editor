@@ -21,6 +21,15 @@ opsys = platform.system()
 class Editor:
     "The main class for the python based CLI text editor Dead Pad"
     def __init__(self) -> None:
+        if len(sys.argv) < 2:
+            print(f"\033cUsage: deadpad <filename>")
+            os._exit(1)
+        if not os.path.exists(sys.argv[1]):
+            print(f"\033cERROR: {sys.argv[1]} does not exist.")
+            os._exit(1)
+        
+        # END CLI GUARDS
+
         self.in_handler = InputHandler()
         self.term_size = shutil.get_terminal_size()
         self.themes_path = f"{os.path.dirname(__file__)}/themes/"
@@ -34,7 +43,7 @@ class Editor:
             "tab": "\t",
         }
         self.extensions:dict[str, Extension] = self.get_extensions()
-
+        
         self.screen = TextScreen(self, self.term_size.columns, self.term_size.lines, Document(self, self.term_size.columns, sys.argv[1]))
         
 
