@@ -26,7 +26,7 @@ class Editor:
             # Toggleables
             "show_paragraphs": False,
             "show_tabs": False,
-            "line_numbers": True,
+            "line_numbers": False,
             # General config
             "theme": f"default",
             "tab_replace": "\t",

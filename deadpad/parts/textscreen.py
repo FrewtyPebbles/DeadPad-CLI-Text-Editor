@@ -140,9 +140,6 @@ class TextScreen:
             
 
         for y, row in enumerate(self.state):
-            if self.master.settings["line_numbers"]:
-                # TODO: move line numbers to a second pass so we can highlight all of the code in one pass
-                screen += f"{get_style(bg=self.theme_data['line_number_bg'])}{(y+self.y_pos+1):^4}{RESET_STYLE}|"
             src_line = ""
             for x, col in enumerate(row):
                 if col != None:
@@ -164,11 +161,12 @@ class TextScreen:
                                 src_line += col
                 elif y == self.cursor_y and x == self.cursor_x:
                     src_line += self.theme_data["cursor_sym"]
-            screen += self.highlight(src_line).replace(" ", " ")
+            screen += src_line
             if col != '\n':
-                screen += f'\n{RESET_STYLE}'
-
-        
+                screen += f'\n'
+    
+        screen = self.highlight(screen).replace(" ", " ")
+        screen = self._render_second_pass(screen)
 
         # command bar
         bchar = self.theme_data['CLI_bar_filler_char']
@@ -176,6 +174,16 @@ class TextScreen:
         padding = ' ' if self.footer_string != "" else ''
         
         return f"{screen}\033[K{self.theme_data['emblem']} {bchar}{padding}{self.footer_string}{padding}{footer_bg}\n\033[K{' '*self.width}"
+
+    def _render_second_pass(self, src:str):
+        lines = src.split('\n')
+        lines.pop()
+        ret_screen = ""
+        for l_n, line in enumerate(lines):
+            if self.master.settings["line_numbers"]:
+                ret_screen += f"{get_style(bg=self.theme_data['line_number_bg'])}{(l_n+self.y_pos+1):^4}{RESET_STYLE}|"
+            ret_screen += line + '\n'
+        return ret_screen + RESET_STYLE
 
     def handle_key(self, key:bytes):
         if key != None:

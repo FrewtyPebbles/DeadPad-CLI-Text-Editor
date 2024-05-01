@@ -9,7 +9,7 @@ if TYPE_CHECKING:
     from deadpad.parts.textscreen import TextScreen
     from deadpad import Editor
 
-# TODO Make a property for the state that runs all activated extensions on the code before the state is used by the TextScreen
+# TODO Add line class to keep track of line numbers (should have all string functions implemented)
 
 
 def chrweight(char:str):

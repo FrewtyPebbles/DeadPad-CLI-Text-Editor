@@ -7,7 +7,7 @@ from deadpad.parts.themes import RESET_STYLE, get_style
 
 FILE_EXT = "py"
 DESCRIPTION = """
-The official python extension made by the creator of DeathPad.
+The official python extension made by the creator of Dead Pad.
 """
 
 class TokType(Enum):
