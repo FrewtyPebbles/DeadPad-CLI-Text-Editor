@@ -8,5 +8,62 @@
     "tab_sym": "-~>",
     "emblem": "💀",
     "CLI_prefix": "=☠ |",
-    "CLI_bar_filler_char": "❚"
+    "CLI_bar_filler_char": "❚",
+    "language": {
+        "keyword": {
+            "color_fg": "purple",
+            "color_bg": "default",
+            "style": "bold"
+        },
+        "label": {
+            "color_fg": "white",
+            "color_bg": "default",
+            "style": "default"
+        },
+        "constant": {
+            "color_fg": "blue",
+            "color_bg": "default",
+            "style": "bold"
+        },
+        "number": {
+            "color_fg": "yellow",
+            "color_bg": "default",
+            "style": "bold"
+        },
+        "bracket": {
+            "color_fg": "white",
+            "color_bg": "default",
+            "style": "bold"
+        },
+        "literal_keyword": {
+            "color_fg": "gray",
+            "color_bg": "default",
+            "style": "bold"
+        },
+        "type": {
+            "color_fg": "cyan",
+            "color_bg": "default",
+            "style": "bold"
+        },
+        "operator_keyword": {
+            "color_fg": "blue",
+            "color_bg": "default",
+            "style": "bold"
+        },
+        "string": {
+            "color_fg": "green",
+            "color_bg": "default",
+            "style": "italic"
+        },
+        "comment": {
+            "color_fg": "cyan",
+            "color_bg": "default",
+            "style": "italic"
+        },
+        "default": {
+            "color_fg": "white",
+            "color_bg": "default",
+            "style": "default"
+        }
+    }
 }

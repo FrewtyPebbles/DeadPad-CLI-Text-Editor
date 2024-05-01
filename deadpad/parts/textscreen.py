@@ -87,6 +87,7 @@ class TextScreen:
                     
     
     def refresh(self):
+        # TODO: make theme_data an attribute of Editor instead.
         self.theme_data = json.load(f_p:=open(f"{self.master.themes_path}{self.master.settings['theme']}.json", "r", encoding="utf8"))
         f_p.close()
         self.updated = True

@@ -14,6 +14,8 @@ try:
 except ModuleNotFoundError:
     from deadpad.parts.linux_input import InputHandler
 
+# TODO make a system for saving the editor config.
+
 opsys = platform.system()
 
 class Editor:

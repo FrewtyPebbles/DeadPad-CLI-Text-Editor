@@ -185,6 +185,7 @@ class Parser:
         This parses the src str into a python astso it can be used for syntax highlighting and other tooling.
         """
         self.master = master
+        
 
     def highlight(self, src:str):
         "This syntax highlights the string and returns it."
@@ -278,35 +279,91 @@ class Parser:
         src.l_n += 1
 
     def render(self, tokens:list[Token]):
+        language_theme = self.master.screen.theme_data["language"]
         ret_str = ""
         for tok in tokens:
             if isinstance(tok, PyExcept):
                 raise RuntimeError(f"The following error occured in the extension ext_python...\n{PyExcept}")
             match tok.tok_type:
                 case TokType.string | TokType.misc_unclosed_str:
-                    ret_str += tok.render("green", style="italic")
+                    theme_type = "string"
+                    ret_str += tok.render(
+                        language_theme[theme_type]["color_fg"],
+                        language_theme[theme_type]["color_bg"],
+                        language_theme[theme_type]["style"]
+                    )
                 case _:
                     if tok.tok_type == TokType.misc_comment:
-                        ret_str += tok.render("cyan", style="italic")
+                        theme_type = "comment"
+                        ret_str += tok.render(
+                            language_theme[theme_type]["color_fg"],
+                            language_theme[theme_type]["color_bg"],
+                            language_theme[theme_type]["style"]
+                        )
                     elif tok.tok_type == TokType.label:
                         if tok.tok_value.isupper():
-                            ret_str += tok.render("blue", style="bold")
+                            theme_type = "constant"
+                            ret_str += tok.render(
+                                language_theme[theme_type]["color_fg"],
+                                language_theme[theme_type]["color_bg"],
+                                language_theme[theme_type]["style"]
+                            )
                         else:
-                            ret_str += tok.render("white")
+                            theme_type = "label"
+                            ret_str += tok.render(
+                                language_theme[theme_type]["color_fg"],
+                                language_theme[theme_type]["color_bg"],
+                                language_theme[theme_type]["style"]
+                            )
                     elif tok.tok_type in {TokType.integer, TokType.float}:
-                        ret_str += tok.render("yellow", style="bold")
+                        theme_type = "number"
+                        ret_str += tok.render(
+                            language_theme[theme_type]["color_fg"],
+                            language_theme[theme_type]["color_bg"],
+                            language_theme[theme_type]["style"]
+                        )
                     elif tok.tok_type.is_keyword:
-                        ret_str += tok.render("purple", style="bold")
+                        theme_type = "keyword"
+                        ret_str += tok.render(
+                            language_theme[theme_type]["color_fg"],
+                            language_theme[theme_type]["color_bg"],
+                            language_theme[theme_type]["style"]
+                        )
                     elif tok.tok_type.is_bracket:
-                        ret_str += tok.render("white", style="bold")
+                        theme_type = "bracket"
+                        ret_str += tok.render(
+                            language_theme[theme_type]["color_fg"],
+                            language_theme[theme_type]["color_bg"],
+                            language_theme[theme_type]["style"]
+                        )
                     elif tok.tok_type.is_literal_keyword:
-                        ret_str += tok.render("red", style="bold")
+                        theme_type = "literal_keyword"
+                        ret_str += tok.render(
+                            language_theme[theme_type]["color_fg"],
+                            language_theme[theme_type]["color_bg"],
+                            language_theme[theme_type]["style"]
+                        )
                     elif tok.tok_type.is_type:
-                        ret_str += tok.render("cyan", style="bold")
+                        theme_type = "type"
+                        ret_str += tok.render(
+                            language_theme[theme_type]["color_fg"],
+                            language_theme[theme_type]["color_bg"],
+                            language_theme[theme_type]["style"]
+                        )
                     elif tok.tok_type.is_operator_word:
-                        ret_str += tok.render("blue", style="bold")
+                        theme_type = "operator_keyword"
+                        ret_str += tok.render(
+                            language_theme[theme_type]["color_fg"],
+                            language_theme[theme_type]["color_bg"],
+                            language_theme[theme_type]["style"]
+                        )
                     else:
-                        ret_str += tok.render()
+                        theme_type = "default"
+                        ret_str += tok.render(
+                            language_theme[theme_type]["color_fg"],
+                            language_theme[theme_type]["color_bg"],
+                            language_theme[theme_type]["style"]
+                        )
         return ret_str
 
 
