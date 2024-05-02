@@ -3,33 +3,52 @@ import termios
 import time
 import tty
 from deadpad.parts.input_handler import BaseInputHandler
+import os
+import io
+
+sys.stdin = open("/dev/stdin")
 
 def getch():
     fd = sys.stdin.fileno()
     orig = termios.tcgetattr(fd)
-
-    tty.setcbreak(fd)
-    inp = sys.stdin.read(1)
-    if inp == "\x1b":# if it is an escape code read the rest of the bytes
-        inp += (ch2 := sys.stdin.read(1))
-        if ch2 == '[':
-            # escape sequence
-            while not (chn := sys.stdin.read(1)).isalpha():
-                inp += chn
-            else:
-                inp += chn
-    termios.tcsetattr(fd, termios.TCSAFLUSH, orig)
+    
+    try:
+        tty.setcbreak(fd)
+        #sys.stdout.write("\x1b[?1000h\x1b[?1003h\x1b[?1015h\x1b[?1006h") # enable mouse mode
+        #sys.stdout.flush()
+        inp = sys.stdin.read(1)
+        if inp == "\x1b":# if it is an escape code read the rest of the bytes
+            inp += (ch2 := sys.stdin.read(1))
+            if ch2 == '[':
+                # escape sequence
+                while not (chn := sys.stdin.read(1)).isalpha():
+                    inp += chn
+                else:
+                    inp += chn
+        #sys.stdout.write("\x1b[?1000l\x1b[?1003l\x1b[?1015l\x1b[?1006l") # stop mouse mode
+        #sys.stdout.flush()
+        sys.stdin.flush()
+    finally:
+        termios.tcsetattr(fd, termios.TCSAFLUSH, orig)
     return inp.encode()
     
 
 class InputHandler(BaseInputHandler):
 
     def start(self):
+        # disable stdin echo
+        fd = sys.stdin.fileno()
+        new_term_attr = termios.tcgetattr(fd)
+        new_term_attr[3] &= ~termios.ECHO
+        termios.tcsetattr(fd, termios.TCSANOW, new_term_attr)
+        # end disable stdin echo
         sys.stdout.write("\x1b[?1000h\x1b[?1003h\x1b[?1015h\x1b[?1006h") # enable mouse mode
+        sys.stdout.flush()
         super().start()
 
     def stop(self):
         sys.stdout.write("\x1b[?1000l\x1b[?1003l\x1b[?1015l\x1b[?1006l") # stop mouse mode
+        sys.stdout.flush()
         super().stop()
 
     def _detect_keys(self):
@@ -39,6 +58,7 @@ class InputHandler(BaseInputHandler):
                 self.input_queue.get(False)
             if sys.stdin.isatty():
                 self.input_queue.put(self.filter_key(getch()), False)
+
 
 
 if __name__ == "__main__":
