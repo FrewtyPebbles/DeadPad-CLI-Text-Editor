@@ -166,6 +166,7 @@ class Editor:
 
         
     def run(self):
+        sys.stdout.write("\033[?25l") # hide text cursor
         try:
             import termios
             orig = termios.tcgetattr(sys.stdin.fileno())
@@ -180,6 +181,7 @@ class Editor:
         except UnboundLocalError:
             pass
         sys.stdout.write("\033c")
+        sys.stdout.write("\033[?25h") # show text cursor
         
     def _run_update(self):
         self.screen.handle_key(self.in_handler.get())

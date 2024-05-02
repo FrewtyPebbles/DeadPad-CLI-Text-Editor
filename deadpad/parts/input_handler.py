@@ -2,6 +2,11 @@ import platform
 import threading as th
 from queue import Queue
 
+# TODO: Make get method return an actual class rather than just str so it is easier/cleaner  to check
+# input type and things.
+# TODO: make get method return a string because they are easier to deal with and will remove overhead
+# of calling `.decode()/.encode()`.  There is also no reason to use bytes in this case.
+
 class BaseInputHandler:
 
     def __init__(self) -> None:

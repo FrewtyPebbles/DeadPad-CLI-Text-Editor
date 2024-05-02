@@ -6,7 +6,7 @@ from deadpad.parts.input_handler import BaseInputHandler
 import os
 import io
 
-sys.stdin = open("/dev/stdin")
+
 
 def getch():
     fd = sys.stdin.fileno()
@@ -14,8 +14,8 @@ def getch():
     
     try:
         tty.setcbreak(fd)
-        #sys.stdout.write("\x1b[?1000h\x1b[?1003h\x1b[?1015h\x1b[?1006h") # enable mouse mode
-        #sys.stdout.flush()
+        sys.stdout.write("\x1b[?1000h\x1b[?1003h\x1b[?1015h\x1b[?1006h") # enable mouse mode
+        sys.stdout.flush()
         inp = sys.stdin.read(1)
         if inp == "\x1b":# if it is an escape code read the rest of the bytes
             inp += (ch2 := sys.stdin.read(1))
@@ -25,9 +25,9 @@ def getch():
                     inp += chn
                 else:
                     inp += chn
-        #sys.stdout.write("\x1b[?1000l\x1b[?1003l\x1b[?1015l\x1b[?1006l") # stop mouse mode
-        #sys.stdout.flush()
         sys.stdin.flush()
+        sys.stdout.write("\x1b[?1000l\x1b[?1003l\x1b[?1015l\x1b[?1006l") # stop mouse mode
+        sys.stdout.flush()
     finally:
         termios.tcsetattr(fd, termios.TCSAFLUSH, orig)
     return inp.encode()
@@ -42,8 +42,8 @@ class InputHandler(BaseInputHandler):
         new_term_attr[3] &= ~termios.ECHO
         termios.tcsetattr(fd, termios.TCSANOW, new_term_attr)
         # end disable stdin echo
-        sys.stdout.write("\x1b[?1000h\x1b[?1003h\x1b[?1015h\x1b[?1006h") # enable mouse mode
-        sys.stdout.flush()
+        #sys.stdout.write("\x1b[?1000h\x1b[?1003h\x1b[?1015h\x1b[?1006h") # enable mouse mode
+        #sys.stdout.flush()
         super().start()
 
     def stop(self):
