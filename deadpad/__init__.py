@@ -41,6 +41,7 @@ class Editor:
             # General config
             "theme": f"default",
             "tab": "\t",
+            "scroll_speed": 3
         }
         self.extensions:dict[str, Extension] = self.get_extensions()
         

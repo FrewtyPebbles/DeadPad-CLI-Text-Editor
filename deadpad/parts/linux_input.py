@@ -24,6 +24,14 @@ def getch():
 
 class InputHandler(BaseInputHandler):
 
+    def start(self):
+        sys.stdout.write("\x1b[?1000h\x1b[?1003h\x1b[?1015h\x1b[?1006h") # enable mouse mode
+        super().start()
+
+    def stop(self):
+        sys.stdout.write("\x1b[?1000l\x1b[?1003l\x1b[?1015l\x1b[?1006l") # stop mouse mode
+        super().stop()
+
     def _detect_keys(self):
         while self.checking_for_input:
             if self.input_queue.full():
@@ -38,14 +46,12 @@ if __name__ == "__main__":
     orig = termios.tcgetattr(fd)
     ih = InputHandler()
     ih.start()
-    sys.stdout.write("\x1b[?1003h\x1b[?1015h\x1b[?1006h")
     while True:
         if (char := ih.get()) != None:
             print(repr(char))
             if char == b'~':
                 break
         time.sleep(0.1)
-    sys.stdout.write("\x1b[?1000l")
     ih.stop()
     termios.tcsetattr(fd, termios.TCSAFLUSH, orig)
         

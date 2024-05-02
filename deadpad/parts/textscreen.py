@@ -58,6 +58,10 @@ class TextScreen:
         self.document.update_state()
         sys.stdout.write("\033c")
         self.get_extensions()
+
+    @property
+    def line_number_width(self):
+        return self.master.settings["show_line_numbers"] * 5
         
 
     def check_update(self):
@@ -98,7 +102,7 @@ class TextScreen:
     
     @y_pos.setter
     def y_pos(self, val:int):
-        self._y_pos = max(val, 0)
+        self._y_pos = min(max(val, 0), self.document.height - self.height)
         
 
     @property
@@ -189,6 +193,19 @@ class TextScreen:
     def handle_key(self, key:bytes):
         if key != None:
             self.updated = True
+            if key.startswith(keys.MOUSE_PREFIX):
+                str_key = key.decode()
+                tail = str_key[-1]
+                in_type, x, y = (int(pos) for pos in str_key.lstrip(keys.MOUSE_PREFIX.decode())[:-1].split(';'))
+                if in_type == keys.MOUSE_SCROLL_UP:
+                    self.y_pos -= self.master.settings["scroll_speed"]
+                elif in_type == keys.MOUSE_SCROLL_DOWN:
+                    self.y_pos += self.master.settings["scroll_speed"]
+                elif tail == 'm':
+                    self.document.cursor.x = x-1  - self.line_number_width
+                    self.document.cursor.y = self.y_pos + y - 1
+                
+                return
         if self.edit_mode:
             self.footer_string = self.document.file_path if self.footer_string in {"COMMAND MODE",self.document.file_path} else self.footer_string
             
@@ -225,6 +242,7 @@ class TextScreen:
             command = b""
             cursor_pos = 0
             while (curr_key := self.master.in_handler.get()) != b'\n':
+                
                 if curr_key != None:
                     match curr_key:
                         case keys.BACKSPACE:
