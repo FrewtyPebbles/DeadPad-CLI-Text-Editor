@@ -60,6 +60,7 @@ class InputHandler(BaseInputHandler):
                 key = getch()
                 if key:
                     self.input_queue.put(InputEvent(key), False)
+            
 
 
 

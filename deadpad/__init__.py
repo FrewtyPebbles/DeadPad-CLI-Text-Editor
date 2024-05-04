@@ -202,6 +202,8 @@ class Editor:
             clear_str = "\033[F\033[K" * (self.term_size.lines)
             self.screen.render(self.term_size.columns, self.term_size.lines)
             sys.stdout.write(f"{clear_str}{self.screen.render(self.term_size.columns, self.term_size.lines)}")
+        else:
+            time.sleep(0.01)
 
 
 def main():

@@ -64,6 +64,11 @@
             "color_fg": "white",
             "color_bg": "default",
             "style": "default"
+        },
+        "error": {
+            "color_fg": "white",
+            "color_bg": "red",
+            "style": "underline"
         }
     }
 }

@@ -129,7 +129,7 @@ class Token:
         self.tok_value = tok_value
         self.col_num = col_num
         self.line_num = line_num
-        self.exception = None
+        self.exception:PyExcept = None
     
 
     def __repr__(self):
@@ -156,7 +156,9 @@ class Token:
             if assume_num_str.isdigit():
                 # now that we know the string is all integers, check if it isa valid integer
                 if assume_num_str[0] == '0' and len(assume_num_str) > 1:
-                    return PyExcept("SyntaxError", "Integers cannotbegin with a leading 0.")
+                    bad_int = Token(TokType.integer, raw_str, col_num, line_num)
+                    bad_int.exception = PyExcept("SyntaxError", "Integers cannotbegin with a leading 0.")
+                    return bad_int
                 else:
                     # valid integer
                     return Token(TokType.integer, int(raw_str), col_num, line_num)
@@ -283,7 +285,7 @@ class Parser:
         ret_str = ""
         for tok in tokens:
             if isinstance(tok, PyExcept):
-                raise RuntimeError(f"The following error occured in the extension ext_python...\n{PyExcept}")
+                raise RuntimeError(f"The following error occured in the extension ext_python...\n{tok}")
             match tok.tok_type:
                 case TokType.string | TokType.misc_unclosed_str:
                     theme_type = "string"
@@ -293,7 +295,14 @@ class Parser:
                         language_theme[theme_type]["style"]
                     )
                 case _:
-                    if tok.tok_type == TokType.misc_comment:
+                    if tok.exception:
+                        theme_type = "error"
+                        ret_str += tok.render(
+                            language_theme[theme_type]["color_fg"],
+                            language_theme[theme_type]["color_bg"],
+                            language_theme[theme_type]["style"]
+                        )
+                    elif tok.tok_type == TokType.misc_comment:
                         theme_type = "comment"
                         ret_str += tok.render(
                             language_theme[theme_type]["color_fg"],
