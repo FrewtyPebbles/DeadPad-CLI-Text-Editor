@@ -5,6 +5,8 @@ from typing import Generic, Iterable, TypeVar
 from deadpad import Editor
 from deadpad.parts.themes import RESET_STYLE, get_style
 
+# TODO add number context so numbers like 0.01 wont have 01 be parsed as syntax errors.
+
 FILE_EXT = "py"
 DESCRIPTION = """
 The official python extension made by the creator of Dead Pad.
