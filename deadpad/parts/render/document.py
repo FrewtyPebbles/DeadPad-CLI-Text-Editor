@@ -4,9 +4,10 @@ import sys
 import datetime
 from typing import TYPE_CHECKING
 
-from deadpad.parts import keys
+from deadpad.parts.input import keys
+from deadpad.parts.input.input_handler import InputEvent
 if TYPE_CHECKING:
-    from deadpad.parts.textscreen import TextScreen
+    from deadpad.parts.render.textscreen import TextScreen
     from deadpad import Editor
 
 # TODO Add line class to keep track of line numbers (should have all string functions implemented)
@@ -146,7 +147,8 @@ class Document:
         self.updated = False
         return updated
 
-    def handle_key(self, key:bytes):
+    def handle_input(self, event:InputEvent):
+        key = event.inp
         if key != None:
             
             match key:

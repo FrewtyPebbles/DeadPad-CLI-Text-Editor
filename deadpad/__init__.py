@@ -1,18 +1,19 @@
 import datetime
 import importlib
+import json
 import os
 import platform
 import sys
 import time
 from types import ModuleType
 from deadpad.parts.extension import Extension
-from deadpad.parts.textscreen import TextScreen
+from deadpad.parts.render.textscreen import TextScreen
 import shutil
-from deadpad.parts.document import Document
+from deadpad.parts.render.document import Document
 try:
-    from deadpad.parts.windows_input import InputHandler
+    from deadpad.parts.input.windows_input import InputHandler
 except ModuleNotFoundError:
-    from deadpad.parts.linux_input import InputHandler
+    from deadpad.parts.input.linux_input import InputHandler
 
 # TODO make a system for saving the editor config.
 
@@ -44,9 +45,17 @@ class Editor:
             "scroll_speed": 3
         }
         self.extensions:dict[str, Extension] = self.get_extensions()
-        
+
+        self.theme_data = json.load(f_p:=open(f"{self.themes_path}{self.settings['theme']}.json", "r", encoding="utf8"))
+        "Contains the config for the current theme in use."
+        f_p.close()
         self.screen = TextScreen(self, self.term_size.columns, self.term_size.lines, Document(self, self.term_size.columns, sys.argv[1]))
         
+    def refresh(self):
+        # TODO: make theme_data an attribute of Editor instead.
+        self.theme_data = json.load(f_p:=open(f"{self.themes_path}{self.settings['theme']}.json", "r", encoding="utf8"))
+        f_p.close()
+        self.screen.updated = True
 
     def get_extensions(self):
         modules:dict[str, Extension] = {}
@@ -70,7 +79,7 @@ class Editor:
                     self.screen.footer_string = f"Last saved '{self.screen.document.file_path[:7]}' at {datetime.datetime.now()}. 📀"
                     self.screen.document.save()
                 case "refresh":
-                    self.screen.refresh()
+                    self.refresh()
                     self.screen.footer_string = f"Dead Pad Themes, Plugins, and Config refreshed."
                 case "edit":
                     self.screen.open_document(tokens[1])
@@ -184,7 +193,7 @@ class Editor:
         sys.stdout.write("\033[?25h") # show text cursor
         
     def _run_update(self):
-        self.screen.handle_key(self.in_handler.get())
+        self.screen.handle_input(self.in_handler.get())
         term_size = shutil.get_terminal_size()
         if self.screen.check_update()\
          or term_size.lines != self.term_size.lines\

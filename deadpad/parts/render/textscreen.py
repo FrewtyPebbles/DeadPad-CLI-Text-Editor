@@ -8,8 +8,9 @@ import sys
 import time
 import shutil
 from typing import TYPE_CHECKING, Callable
-from deadpad.parts import keys
-from deadpad.parts.document import Document, str_weight
+from deadpad.parts.input import keys
+from deadpad.parts.render.document import Document, str_weight
+from deadpad.parts.input.input_handler import InputEvent, InputType
 from deadpad.parts.themes import RESET_STYLE, get_style
 if TYPE_CHECKING:
     from deadpad import Editor
@@ -49,10 +50,8 @@ class TextScreen:
         self.edit_mode = True
         self.running = True
         self.master = master
-        self.theme_data = json.load(f_p:=open(f"{self.master.themes_path}{self.master.settings['theme']}.json", "r", encoding="utf8"))
-        f_p.close()
         self.updated = True
-        
+        self.theme_data = self.master.theme_data
         self.state = [[] for _ in range(self.height)]    
         self.document.render_width = self.width
         self.document.update_state()
@@ -89,12 +88,6 @@ class TextScreen:
                 if extension.parser:
                     self.highlight = extension.parser.highlight
                     
-    
-    def refresh(self):
-        # TODO: make theme_data an attribute of Editor instead.
-        self.theme_data = json.load(f_p:=open(f"{self.master.themes_path}{self.master.settings['theme']}.json", "r", encoding="utf8"))
-        f_p.close()
-        self.updated = True
 
     @property
     def y_pos(self):
@@ -102,7 +95,7 @@ class TextScreen:
     
     @y_pos.setter
     def y_pos(self, val:int):
-        self._y_pos = min(max(val, 0), self.document.height - self.height)
+        self._y_pos = min(max(val, 0), max(0, self.document.height - self.height))
         
 
     @property
@@ -190,27 +183,30 @@ class TextScreen:
             ret_screen += line + '\n'
         return ret_screen + RESET_STYLE
 
-    def handle_key(self, key:bytes):
-        if key != None:
-            
-            if key.startswith(keys.MOUSE_PREFIX):
-                str_key = key.decode()
-                tail = str_key[-1]
-                in_type, x, y = (int(pos) for pos in str_key.lstrip(keys.MOUSE_PREFIX.decode())[:-1].split(';'))
-                if in_type == keys.MOUSE_SCROLL_UP:
-                    self.y_pos -= self.master.settings["scroll_speed"]
-                    self.updated = True
-                elif in_type == keys.MOUSE_SCROLL_DOWN:
-                    self.y_pos += self.master.settings["scroll_speed"]
-                    self.updated = True
-                elif tail == 'm':
-                    self.document.cursor.x = x-1  - self.line_number_width
-                    self.document.cursor.y = self.y_pos + y - 1
-                    self.updated = True
-                
-                return
-            else:
+    def handle_input(self, event:InputEvent | None):
+        if event == None:
+            return
+
+        key = event.inp
+        
+        # handle mouse and set update
+        if event.type == InputType.MOUSE:
+            if event.mouse_data.event_type == keys.MOUSE_SCROLL_UP:
+                self.y_pos -= self.master.settings["scroll_speed"]
                 self.updated = True
+            elif event.mouse_data.event_type == keys.MOUSE_SCROLL_DOWN:
+                self.y_pos += self.master.settings["scroll_speed"]
+                self.updated = True
+            elif event.mouse_data.event_state == 'm':
+                self.document.cursor.x = event.mouse_data.col-1  - self.line_number_width
+                self.document.cursor.y = self.y_pos + event.mouse_data.row - 1
+                self.updated = True
+            
+            return
+        else:
+            self.updated = True
+
+        # Edit vs command mode
         if self.edit_mode:
             self.footer_string = self.document.file_path if self.footer_string in {"COMMAND MODE",self.document.file_path} else self.footer_string
             
@@ -239,15 +235,19 @@ class TextScreen:
                 case keys.DOWN: # down
                     if self.cursor_y == self.height:
                         self.y_pos += 1
-            self.document.handle_key(key)
+            self.document.handle_input(event)
+        
+        # Command mode
         else:
             sys.stdout.write(f"\r\033[K{self.theme_data['CLI_prefix']}{' ' * (self.width - len(self.theme_data['CLI_prefix']))}")
             sys.stdout.flush()
             # this is for doing commands
             command = b""
             cursor_pos = 0
-            while (curr_key := self.master.in_handler.get()) != b'\n':
-                
+            while (event.key if (event := self.master.in_handler.get()) else None) != b'\n':
+                if not event:
+                    continue
+                curr_key = event.key
                 if curr_key != None:
                     if curr_key.startswith(keys.MOUSE_PREFIX):
                         continue

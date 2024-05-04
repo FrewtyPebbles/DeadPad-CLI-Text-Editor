@@ -279,7 +279,7 @@ class Parser:
         src.l_n += 1
 
     def render(self, tokens:list[Token]):
-        language_theme = self.master.screen.theme_data["language"]
+        language_theme = self.master.theme_data["language"]
         ret_str = ""
         for tok in tokens:
             if isinstance(tok, PyExcept):

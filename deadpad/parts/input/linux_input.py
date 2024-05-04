@@ -2,7 +2,7 @@ import sys
 import termios
 import time
 import tty
-from deadpad.parts.input_handler import BaseInputHandler
+from deadpad.parts.input.input_handler import BaseInputHandler, InputEvent
 import os
 import io
 
@@ -30,7 +30,7 @@ def getch():
         sys.stdout.flush()
     finally:
         termios.tcsetattr(fd, termios.TCSAFLUSH, orig)
-    return inp.encode()
+    return inp
     
 
 class InputHandler(BaseInputHandler):
@@ -55,9 +55,8 @@ class InputHandler(BaseInputHandler):
         while self.checking_for_input:
             if self.input_queue.full():
                 self.input_queue.get(False)
-                self.input_queue.get(False)
             if sys.stdin.isatty():
-                self.input_queue.put(self.filter_key(getch()), False)
+                self.input_queue.put(InputEvent(getch()), False)
 
 
 
