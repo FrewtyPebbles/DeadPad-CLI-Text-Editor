@@ -198,7 +198,7 @@ class TextScreen:
                 self.y_pos += self.master.settings["scroll_speed"]
                 self.updated = True
             elif event.mouse_data.event_state == 'm':
-                self.document.cursor.x = event.mouse_data.col-1  - self.line_number_width
+                self.document.cursor.x = event.mouse_data.col-1- self.line_number_width
                 self.document.cursor.y = self.y_pos + event.mouse_data.row - 1
                 self.updated = True
             

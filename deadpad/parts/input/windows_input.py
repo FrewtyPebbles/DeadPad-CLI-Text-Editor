@@ -14,6 +14,7 @@ class InputHandler(BaseInputHandler):
         while self.checking_for_input:
             if self.input_queue.full():
                 self.input_queue.get(False)
+                self.input_queue.get(False)
             raw_inp = c_inp.get_key()
             sys.stdin.flush()
             if raw_inp:

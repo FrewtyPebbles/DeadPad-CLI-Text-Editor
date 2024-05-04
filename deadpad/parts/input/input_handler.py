@@ -59,7 +59,7 @@ class BaseInputHandler:
     def __init__(self) -> None:
         self._processing_thread = th.Thread(target=self._detect_keys, daemon=True)
         self.checking_for_input = True
-        self.input_queue:Queue[InputEvent] = Queue(1)
+        self.input_queue:Queue[InputEvent] = Queue(2)
 
     def _detect_keys(self):
         "While true and queue keys."

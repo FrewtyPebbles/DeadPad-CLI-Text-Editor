@@ -55,8 +55,11 @@ class InputHandler(BaseInputHandler):
         while self.checking_for_input:
             if self.input_queue.full():
                 self.input_queue.get(False)
+                self.input_queue.get(False)
             if sys.stdin.isatty():
-                self.input_queue.put(InputEvent(getch()), False)
+                key = getch()
+                if key:
+                    self.input_queue.put(InputEvent(key), False)
 
 
 
